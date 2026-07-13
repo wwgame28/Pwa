@@ -30,6 +30,17 @@ const PACKS = [
   'data/intimate-expansion.json',
 ];
 
+// Later manifests have higher priority.  Both priority filenames are
+// supported so a focused correction pack can be dropped in without changing
+// the generator again.
+const OVERRIDE_PACKS = [
+  'data/art-overrides-act1.json',
+  'data/art-overrides-act2.json',
+  'data/art-overrides-act3.json',
+  'data/art-overrides-priority.json',
+  'data/priority.json',
+];
+
 const ART = {
   bus: ['act1_bus.webp'],
   checkpoint: [
@@ -106,6 +117,65 @@ const PHOTO_ART = new Set(
     .flatMap(([, files]) => files)
 );
 
+function readArtOverrides() {
+  const overrides = new Map();
+  for (const relativePath of OVERRIDE_PACKS) {
+    const absolutePath = path.join(ROOT, relativePath);
+    if (!fs.existsSync(absolutePath)) continue;
+
+    let payload;
+    try {
+      payload = JSON.parse(fs.readFileSync(absolutePath, 'utf8'));
+    } catch (error) {
+      throw new Error(`Cannot parse ${relativePath}: ${error.message}`);
+    }
+    if (!payload || Array.isArray(payload) || typeof payload !== 'object') {
+      throw new Error(`${relativePath} must contain a sceneId-to-sourcePath object`);
+    }
+
+    for (const [rawSceneId, rawSource] of Object.entries(payload)) {
+      const sceneId = String(rawSceneId).trim();
+      const source = typeof rawSource === 'string' ? rawSource.trim() : '';
+      if (!sceneId || !source) {
+        throw new Error(`${relativePath} contains an empty scene id or source path`);
+      }
+      overrides.set(sceneId, { source, manifest: relativePath });
+    }
+  }
+  return overrides;
+}
+
+const ART_OVERRIDES = readArtOverrides();
+
+function overrideSource(scene) {
+  const entry = ART_OVERRIDES.get(scene.id);
+  if (!entry) return null;
+
+  const absolute = path.resolve(ROOT, entry.source);
+  if (!absolute.startsWith(`${IMAGE_ROOT}${path.sep}`)) {
+    throw new Error(`Unsafe override path for ${scene.id} in ${entry.manifest}: ${entry.source}`);
+  }
+  if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) {
+    throw new Error(`Missing override source for ${scene.id} in ${entry.manifest}: ${entry.source}`);
+  }
+
+  const baseName = path.basename(absolute);
+  const safeMaster = /^master_[a-z0-9_-]+\.webp$/u.test(baseName);
+  const safeIntimate = /^intimate_(?:full_|exact_)?\d+\.webp$/u.test(baseName);
+  const safeExact = /^scene_exact_[a-z0-9_-]+\.webp$/u.test(baseName);
+  const allowed = PHOTO_ART.has(baseName) || baseName === 'act1_bus.webp' ||
+    safeMaster || safeIntimate || safeExact;
+  if (!allowed) {
+    throw new Error(
+      `UI/title-card or unapproved override source for ${scene.id} in ${entry.manifest}: ${entry.source}`
+    );
+  }
+  if (safeIntimate && !isIntimateContext(scene)) {
+    throw new Error(`Intimate override assigned to non-intimate scene ${scene.id} in ${entry.manifest}`);
+  }
+  return absolute;
+}
+
 function readScenes() {
   const scenes = PACKS.flatMap((relativePath) => {
     const payload = JSON.parse(fs.readFileSync(path.join(ROOT, relativePath), 'utf8'));
@@ -118,9 +188,17 @@ function readScenes() {
   if (scenes.length !== EXPECTED_SCENES) {
     throw new Error(`Expected ${EXPECTED_SCENES} scenes, found ${scenes.length}`);
   }
-  if (new Set(scenes.map((scene) => scene.id)).size !== scenes.length) {
+  const sceneIds = new Set(scenes.map((scene) => scene.id));
+  if (sceneIds.size !== scenes.length) {
     throw new Error('Scene ids must be unique');
   }
+  const unknownOverrides = [...ART_OVERRIDES.keys()].filter((sceneId) => !sceneIds.has(sceneId));
+  if (unknownOverrides.length) {
+    throw new Error(`Override manifests contain unknown scene ids: ${unknownOverrides.join(', ')}`);
+  }
+  // Validate every optional manifest eagerly, including sources outside a
+  // requested --prefix build, so a bad path can never remain hidden.
+  for (const scene of scenes) overrideSource(scene);
   return scenes;
 }
 
@@ -204,8 +282,9 @@ function sourcesFor(scene) {
   const seed = hash32(scene.id);
   const category = categoryFor(scene);
   const pool = ART[category];
+  const override = overrideSource(scene);
   const explicit = explicitSource(scene);
-  const primary = explicit || artPath(pool[seed % pool.length]);
+  const primary = override || explicit || artPath(pool[seed % pool.length]);
 
   let secondaryPool = pool.map(artPath).filter((candidate) => candidate !== primary);
   if (!secondaryPool.length) {
@@ -272,19 +351,24 @@ function validateOutput(scene, output) {
 function optimizeOversize(scene, output) {
   for (let attempt = 1; attempt <= 5 && fs.statSync(output).size > 25 * 1024; attempt += 1) {
     const candidate = `${output}.optimized-${attempt}.webp`;
-    if (fs.existsSync(candidate)) fs.unlinkSync(candidate);
-    const result = spawnSync('convert', [
-      output, '-strip', '-define', 'webp:method=6', '-quality', '58', candidate,
-    ], { encoding: 'utf8' });
-    if (result.status !== 0) {
-      throw new Error(`Could not optimize ${scene.id}: ${result.stderr.trim()}`);
-    }
-    validateOutput(scene, candidate);
-    if (fs.statSync(candidate).size < fs.statSync(output).size) {
-      fs.renameSync(candidate, output);
-    } else {
-      fs.unlinkSync(candidate);
-      break;
+    try {
+      if (fs.existsSync(candidate)) fs.unlinkSync(candidate);
+      const result = spawnSync('convert', [
+        output, '-strip', '-define', 'webp:method=6', '-quality', '58', candidate,
+      ], { encoding: 'utf8' });
+      if (result.status !== 0) {
+        throw new Error(`Could not optimize ${scene.id}: ${result.stderr.trim()}`);
+      }
+      validateOutput(scene, candidate);
+      if (fs.statSync(candidate).size < fs.statSync(output).size) {
+        fs.renameSync(candidate, output);
+      } else {
+        break;
+      }
+    } finally {
+      // ImageMagick can occasionally leave an empty candidate while reporting
+      // success under load. Never let that temporary file enter the library.
+      if (fs.existsSync(candidate)) fs.unlinkSync(candidate);
     }
   }
 }
@@ -392,7 +476,7 @@ async function main() {
     throw new Error(`Invalid outputs remain: ${stillInvalid.map((scene) => scene.id).join(', ')}`);
   }
 
-  const outputs = fs.readdirSync(OUTPUT_ROOT).filter((name) => name.endsWith('.webp'));
+  const outputs = fs.readdirSync(OUTPUT_ROOT).filter((name) => /^[a-z0-9_-]+\.webp$/u.test(name));
   if (!prefix && outputs.length !== EXPECTED_SCENES) {
     throw new Error(`Expected ${EXPECTED_SCENES} outputs, found ${outputs.length}`);
   }
