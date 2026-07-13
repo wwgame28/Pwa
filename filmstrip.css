@@ -1,0 +1,53 @@
+.scene-filmstrip {
+  position: absolute;
+  z-index: 3;
+  left: 22px;
+  right: 22px;
+  bottom: 58px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.film-frame {
+  width: 62px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, .2);
+  background: #080b0a;
+  overflow: hidden;
+  cursor: pointer;
+  opacity: .62;
+  transition: opacity .22s ease, border-color .22s ease, transform .22s ease, box-shadow .22s ease;
+}
+
+.film-frame img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: saturate(.62) brightness(.72);
+  animation: none;
+}
+
+.film-frame:hover,
+.film-frame:focus-visible {
+  opacity: .9;
+  transform: translateY(-2px);
+}
+
+.film-frame.active {
+  opacity: 1;
+  border-color: var(--sage);
+  box-shadow: 0 0 0 1px rgba(167, 185, 162, .22), 0 6px 20px rgba(0, 0, 0, .35);
+}
+
+.film-frame.active img { filter: saturate(.78) brightness(.9); }
+#sceneImage { transition: opacity .18s ease, transform .3s ease; }
+#sceneImage.frame-swap { opacity: .28; transform: scale(1.025); }
+
+@media (max-width: 680px) {
+  .scene-filmstrip { left: 16px; right: 16px; bottom: 54px; gap: 6px; }
+  .film-frame { width: 56px; height: 40px; }
+  .location { left: 18px; bottom: 20px; }
+}
