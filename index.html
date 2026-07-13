@@ -28,7 +28,9 @@
         <button class="nav-btn" data-view="map"><span>⌖</span> Карта объекта</button>
         <button class="nav-btn" data-view="codex"><span>▤</span> Архив <em id="docCount">0</em></button>
         <button class="nav-btn" data-view="journal"><span>≋</span> Журнал</button>
+        <button class="nav-btn" data-view="relations"><span>♙</span> Команда</button>
         <button class="nav-btn" data-view="stats"><span>⌁</span> Состояние</button>
+        <button class="nav-btn" data-view="settings"><span>⚙</span> Настройки</button>
       </nav>
       <div class="side-bottom"><div class="progress-label"><span>ИССЛЕДОВАНО</span><b id="progressText">0%</b></div><div id="progressTrack" class="progress" role="progressbar" aria-label="Исследовано" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="progressBar"></i></div><button id="installBtn" class="install is-hidden">＋ Установить приложение</button><button id="resetBtn" class="reset">Удалить прогресс</button><small class="privacy-note">Данные хранятся только на этом устройстве.</small></div>
     </aside>
@@ -50,7 +52,9 @@
       <section id="mapView" class="view"><div class="page-head"><span>СХЕМА ДОСТУПА</span><h2>Карта объекта</h2><p>Сектора открываются по мере прохождения.</p></div><div id="mapGrid" class="map-grid"></div></section>
       <section id="codexView" class="view"><div class="page-head"><span>ЗАЩИЩЁННЫЙ АРХИВ</span><h2>Найденные документы</h2><p>Каждый фрагмент меняет картину произошедшего.</p></div><div id="docsGrid" class="docs-grid"></div></section>
       <section id="journalView" class="view"><div class="page-head"><span>ХРОНОЛОГИЯ</span><h2>Полевой журнал</h2><p>Последние решения оператора.</p></div><div id="journalList" class="journal"></div></section>
+      <section id="relationsView" class="view"><div class="page-head"><span>ПСИХОЛОГИЧЕСКИЙ МОНИТОРИНГ</span><h2>Состояние команды</h2><p>Отношения меняются после каждого решения. Точные показатели засекречены.</p></div><div id="relationsGrid" class="relations-grid"></div></section>
       <section id="statsView" class="view"><div class="page-head"><span>ТЕЛЕМЕТРИЯ</span><h2>Состояние экспедиции</h2></div><div id="statsGrid" class="stats-grid"></div></section>
+      <section id="settingsView" class="view"><div class="page-head"><span>КОНФИГУРАЦИЯ ТЕРМИНАЛА</span><h2>Настройки</h2><p>Параметры сохраняются только на этом устройстве.</p></div><div id="settingsPanel" class="settings-panel"></div></section>
     </main>
   </div>
 
