@@ -1,5 +1,5 @@
-const CACHE='perimeter-v3.13.0';
-const CORE=['./','./index.html','./styles.css?v=3.13.0','./app.js?v=3.13.0','./manifest.webmanifest','./icons/icon.svg','./icons/icon-192.png','./icons/icon-512.png','./data/scenes.json','./data/documents.json','./data/expansion.json','./data/intimate-expansion.json','./data/keyframes.json'];
+const CACHE='perimeter-v3.13.1';
+const CORE=['./','./index.html','./styles.css?v=3.13.1','./app.js?v=3.13.1','./manifest.webmanifest','./icons/icon.svg','./icons/icon-192.png','./icons/icon-512.png','./data/scenes.json','./data/documents.json','./data/expansion.json','./data/intimate-expansion.json','./data/keyframes.json'];
 const KEY_FRAMES=['act1_bus','gates_closed','admin_hall','sergey_voice','empty_seat','archive_boxes','server_radio','underground_door','emergency_mode','central_archive','zorin_glass','final_choice','ending_truth','ending_lie','ending_sealed','ending_system'].map(name=>`./assets/images/${name}.webp`);
 self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll([...CORE,...KEY_FRAMES])).then(()=>self.skipWaiting())));
 self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));

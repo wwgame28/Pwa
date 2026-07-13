@@ -1,6 +1,6 @@
 {
   "schema": "perimeter.qa-shard.v1",
-  "build_hash": "f17e4bee6ce742e775be78a34f754a3f5126ba69ccfb8687fe485e8fbe7878fa",
+  "build_hash": "866719add229f45821e084413dd1b820bd604bd4719f8046b5436cc16b4f49d5",
   "agent": null,
   "shard": 0,
   "total_shards": 1,
@@ -596,8 +596,8 @@
     "assigned_scene_count": 584,
     "assigned_choice_count": 1680,
     "key_frames": 17,
-    "assertions": 34084,
-    "passed": 34084,
+    "assertions": 39777,
+    "passed": 39777,
     "failed": 0,
     "score": 100
   },
@@ -619,8 +619,8 @@
       "total": 1685
     },
     "story": {
-      "passed": 2877,
-      "total": 2877
+      "passed": 8570,
+      "total": 8570
     },
     "pwa": {
       "passed": 36,

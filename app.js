@@ -1,6 +1,6 @@
 (()=>{'use strict';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const APP_VERSION='3.13.0',SAVE='perimeter.pwa.save.v2',AGE='perimeter.age18.confirmed',reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;let db={scenes:[],map:new Map(),docs:{},keyFrames:new Set(),keyFrameHold:3200},state,installPrompt,audio,ambient=[],keyFrameTimers=[],keyFrameToken=0;
+const APP_VERSION='3.13.1',SAVE='perimeter.pwa.save.v2',AGE='perimeter.age18.confirmed',reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;let db={scenes:[],map:new Map(),docs:{},keyFrames:new Set(),keyFrameHold:3200},state,installPrompt,audio,ambient=[],keyFrameTimers=[],keyFrameToken=0;
 const defaultSettings=()=>({fontSize:'medium',highContrast:false,calmMotion:false,textOnly:false,ambient:true,effects:true,volume:.7});
 const fresh=()=>({version:2,name:'НЕИЗВЕСТЕН',current:'SCENE_001',visited:[],codex:[],vars:{},flags:{},journal:[],seenFrames:[],unlockedAct:1,completedActs:[],endings:[],cycle:1,gameComplete:false,pending:null,settings:defaultSettings(),startedAt:Date.now(),sound:true});
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));

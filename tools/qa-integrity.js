@@ -144,6 +144,10 @@ for (const scene of scenes) {
     check(to !== null && to > from, 'story', 'TIME_REGRESSION', 'Story transition goes backward or keeps the same time', {scene: scene.id, time: scene.time, target, targetTime: sceneMap.get(target)?.time});
   }
 }
+check(storyMinute(sceneMap.get('SCENE_201')?.time) >= 24 * 60 + 6 * 60, 'story', 'ACT2_MORNING_TIME', 'Act II morning must begin on Day 2 after 06:00', {time: sceneMap.get('SCENE_201')?.time});
+check(storyMinute(sceneMap.get('SCENE_336')?.time) >= 24 * 60 + 18 * 60, 'story', 'SECOND_NIGHT_START', 'Second-night phase starts before evening', {time: sceneMap.get('SCENE_336')?.time});
+check(storyMinute(sceneMap.get('SCENE_365')?.time) < 2 * 24 * 60 + 6 * 60, 'story', 'SECOND_NIGHT_END', 'Second-night phase runs past dawn', {time: sceneMap.get('SCENE_365')?.time});
+check(storyMinute(sceneMap.get('SCENE_380')?.time) >= 2 * 24 * 60, 'story', 'THIRD_DAY_DOOR_TIME', 'Third-day door occurs before Day 3', {time: sceneMap.get('SCENE_380')?.time});
 
 const reachable = new Set(['SCENE_001']);
 const queue = ['SCENE_001'];
@@ -276,13 +280,32 @@ for (const id of keyFrameData.frames) {
 for (const scene of scenes) {
   const hasImage = Object.prototype.hasOwnProperty.call(scene, 'image') && Boolean(scene.image);
   check(keyFrameData.frames.includes(scene.id) ? hasImage : !Object.prototype.hasOwnProperty.call(scene, 'image'), 'iphone', 'IMAGE_DATA_POLICY', 'Only manifest key frames may retain image metadata', {scene: scene.id, image: scene.image || null});
-  check(scene.text.includes(scene.title), 'story', 'TITLE_NOT_ANCHORED', 'Scene text does not explicitly establish its titled event', {scene: scene.id, title: scene.title});
 }
-const brokenTemplate = /собираются вокруг сцены так плотно|становится маленьким узлом доверия|выглядит как мелочь: лист|встречает команду|находят след, который не просится в руки/;
+const brokenTemplate = /собираются вокруг сцены так плотно|становится маленьким узлом доверия|выглядит как мелочь: лист|встречает команду|находят след, который не просится в руки|В локации «|происходит событие|начинается событие|останавливает новая улика|Находка не даёт готового ответа|Теперь важен не красивый ответ|С уликой связаны материалы|С этим решением связаны материалы|Эпилог фиксирует итог|Локация «/;
+const brokenTitle = /Игрок|— эхо \d+|Разговор с выжившим \d+|Первая пропущенная сцена|Сцена доверия/;
 const cameraMeta = /\bкадр\b|камер|композиц|цензур|фокус(?:е|ом)?\b|снято|план остаётся|остаётся выше пояса/i;
 for (const scene of scenes) {
   check(!brokenTemplate.test(scene.text), 'story', 'EDITORIAL_TEMPLATE', 'Broken generated prose template remains', {scene: scene.id});
+  check(!brokenTitle.test(scene.title), 'story', 'EDITORIAL_TITLE', 'Visible title contains generator or player-facing service residue', {scene: scene.id, title: scene.title});
+  for (const variant of scene.variants || []) check(!/^Игрок\b/u.test(String(variant.text || '')), 'story', 'VARIANT_PLAYER_LABEL', 'Story variant addresses the player as a service label', {scene: scene.id});
   if (scene.kind === 'intimate') check(!cameraMeta.test(scene.text), 'story', 'INTIMATE_CAMERA_META', 'Intimate prose still describes camera/censorship instead of the story', {scene: scene.id});
+  const outcomes = new Set();
+  for (const choice of scene.choices) {
+    check(!/Зафиксировать улику «|Разобраться, что означает «|Вариант \d+:/i.test(choice.text), 'story', 'CHOICE_TEMPLATE', 'Choice repeats a generated scene title or placeholder', {scene: scene.id, choice: choice.id, text: choice.text});
+    check(!brokenTemplate.test(choice.outcome || ''), 'story', 'OUTCOME_TEMPLATE', 'Choice outcome contains service-style generated prose', {scene: scene.id, choice: choice.id});
+    check(!outcomes.has(choice.outcome), 'story', 'DUPLICATE_OUTCOME', 'Different choices in one scene show identical outcomes', {scene: scene.id, choice: choice.id});
+    outcomes.add(choice.outcome);
+  }
+}
+const proseOwners = new Map();
+for (const scene of scenes) {
+  const normalized = scene.text.trim();
+  check(!proseOwners.has(normalized), 'story', 'DUPLICATE_SCENE_TEXT', 'Two scenes contain completely identical prose', {scene: scene.id, duplicateOf: proseOwners.get(normalized)});
+  proseOwners.set(normalized, scene.id);
+}
+for (const scene of scenes.filter(item => /^INT_FULL_\d{3}$/.test(item.id))) {
+  const number = Number(scene.id.slice(-3));
+  if (number % 6 !== 0) check(scene.choices[0]?.next !== scene.choices[1]?.next, 'story', 'INTIMATE_EXIT_CHOICE', 'Personal-space choice does not leave the optional intimate sequence', {scene: scene.id, next: scene.choices.map(choice => choice.next)});
 }
 check(!/sceneArtPath|sceneFallbackImages|setSceneImage|imagePool/.test(appSource), 'iphone', 'ORDINARY_IMAGE_CODE', 'Runtime still contains per-scene or fallback image loading');
 check(/!db\.keyFrames\.has\(scene\.id\).*return/.test(appSource), 'iphone', 'KEYFRAME_GATE', 'Runtime does not gate image requests behind key frame manifest');
