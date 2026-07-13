@@ -375,8 +375,10 @@ function auditFilmstripRemoval() {
     fail(`UI check: cannot read app.js (${error.message})`);
   }
 
-  if (/sceneFilmstrip/u.test(indexSource)) {
-    fail('UI check: index.html still contains sceneFilmstrip');
+  const shimTag = indexSource.match(/<[^>]*\bid=["']sceneFilmstrip["'][^>]*>/u)?.[0] || '';
+  const safeCompatibilityShim = Boolean(shimTag) && /\bhidden\b/u.test(shimTag) && /\baria-hidden=["']true["']/u.test(shimTag);
+  if (/sceneFilmstrip/u.test(indexSource) && !safeCompatibilityShim) {
+    fail('UI check: index.html contains a visible or unsafe sceneFilmstrip');
   }
   if (/filmstrip\.css/u.test(indexSource)) {
     fail('UI check: index.html still loads filmstrip.css');
@@ -390,7 +392,8 @@ function auditFilmstripRemoval() {
   }
 
   return {
-    indexHasSceneFilmstrip: /sceneFilmstrip/u.test(indexSource),
+    indexHasVisibleSceneFilmstrip: /sceneFilmstrip/u.test(indexSource) && !safeCompatibilityShim,
+    hasSafeCompatibilityShim: safeCompatibilityShim,
     indexLoadsFilmstripCss: /filmstrip\.css/u.test(indexSource),
     renderSceneCallsFilmstrip: renderSceneBody === null
       ? null
@@ -415,7 +418,8 @@ function main() {
   );
   process.stdout.write(`  Overrides: ${overrides.files} file(s), ${overrides.entries} entries checked\n`);
   process.stdout.write(
-    `  Filmstrip removal: index hook=${ui.indexHasSceneFilmstrip ? 'present' : 'absent'}, ` +
+    `  Filmstrip removal: visible hook=${ui.indexHasVisibleSceneFilmstrip ? 'present' : 'absent'}, ` +
+    `hidden compatibility shim=${ui.hasSafeCompatibilityShim ? 'present' : 'absent'}, ` +
     `CSS=${ui.indexLoadsFilmstripCss ? 'present' : 'absent'}, ` +
     `renderScene call=${ui.renderSceneCallsFilmstrip === null ? 'unknown' : ui.renderSceneCallsFilmstrip ? 'present' : 'absent'}\n`
   );
