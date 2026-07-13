@@ -1,0 +1,42 @@
+name: Unpack PWA
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    if: ${{ github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Unpack uploaded PWA
+        shell: bash
+        run: |
+          if [ ! -f pwa.zip ]; then
+            echo "pwa.zip not found; nothing to unpack"
+            exit 0
+          fi
+          mkdir -p /tmp/perimeter-pwa
+          unzip -o pwa.zip -d /tmp/perimeter-pwa
+          cp -a /tmp/perimeter-pwa/. .
+          rm pwa.zip
+
+      - name: Commit extracted site
+        shell: bash
+        run: |
+          if git diff --quiet && [ -z "$(git status --porcelain)" ]; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Deploy Perimeter PWA 3.2"
+          git push
