@@ -21,7 +21,11 @@ jobs:
         shell: bash
         run: |
           shopt -s nullglob
-          if [ -f asset_upload/scene-art.tar.gz ]; then
+          parts=(asset_upload/scene-art.tar.gz.part-*)
+          if [ ${#parts[@]} -gt 0 ]; then
+            cat "${parts[@]}" > /tmp/scene-art.tar.gz
+            tar -xzf /tmp/scene-art.tar.gz
+          elif [ -f asset_upload/scene-art.tar.gz ]; then
             tar -xzf asset_upload/scene-art.tar.gz
           fi
           files=(asset_upload/*.b64)
