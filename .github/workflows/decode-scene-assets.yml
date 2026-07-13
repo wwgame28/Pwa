@@ -17,20 +17,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Decode generated WebP assets
+      - name: Install generated scene art
         shell: bash
         run: |
           shopt -s nullglob
-          files=(asset_upload/*.b64)
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No staged assets"
-            exit 0
+          if [ -f asset_upload/scene-art.tar.gz ]; then
+            tar -xzf asset_upload/scene-art.tar.gz
           fi
-          mkdir -p assets/images
-          for file in "${files[@]}"; do
-            name="$(basename "$file" .b64)"
-            base64 --decode "$file" > "assets/images/$name"
-          done
+          files=(asset_upload/*.b64)
+          if [ ${#files[@]} -gt 0 ]; then
+            mkdir -p assets/images
+            for file in "${files[@]}"; do
+              name="$(basename "$file" .b64)"
+              base64 --decode "$file" > "assets/images/$name"
+            done
+          fi
           rm -rf asset_upload
       - name: Commit generated assets
         shell: bash
@@ -41,5 +42,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "Add generated censored intimacy illustrations"
+          git commit -m "Install unique artwork for every story scene"
           git push
