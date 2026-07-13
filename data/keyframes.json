@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "hold_ms": 3200,
+  "frames": [
+    "SCENE_001",
+    "SCENE_030",
+    "SCENE_061",
+    "SCENE_120",
+    "SCENE_201",
+    "SCENE_276",
+    "SCENE_320",
+    "SCENE_380",
+    "SCENE_401",
+    "SCENE_461",
+    "SCENE_501",
+    "SCENE_575",
+    "SCENE_581",
+    "SCENE_586",
+    "SCENE_591",
+    "SCENE_601",
+    "SCENE_611"
+  ]
+}
